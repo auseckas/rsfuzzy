@@ -1,0 +1,4 @@
+[package]
+name = "rsfuzzy"
+version = "0.1.0"
+authors = ["Andrew Useckas <andrew@threatx.io>"]
