@@ -2,7 +2,7 @@
 
 This is an early version. Syntax may change at any time.
 
-'''
+```
 extern crate rsfuzzy;
 use rsfuzzy;
 
@@ -47,4 +47,4 @@ let f_rules = vec![
 
 f_engine.calculate(11.2);
 
-'''
+```
