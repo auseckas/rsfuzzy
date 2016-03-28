@@ -265,17 +265,17 @@ macro_rules! fz_input_var {
             let mut vars: Vec<fuzzy::mf::MfType> = Vec::new();
             $(
                 let value = match $x.0 {
-                    "triangle" => fuzzy::mf::Triangle::new($x.1, $x.2),
-                    "trapezoid" => fuzzy::mf::Trapezoid::new($x.1, $x.2),
-                    "up" => fuzzy::mf::Up::new($x.1, $x.2),
-                    "down" => fuzzy::mf::Down::new($x.1, $x.2),
+                    "triangle" => $crate::mf::Triangle::new($x.1, $x.2),
+                    "trapezoid" => $crate::mf::Trapezoid::new($x.1, $x.2),
+                    "up" => $crate::mf::Up::new($x.1, $x.2),
+                    "down" => $crate::mf::Down::new($x.1, $x.2),
                     _ => return Err(TXParserError::from_complex("No MF found for type", $x.0))
                     
                 };
                vars.push(value);
                 
             )*
-            fuzzy::InputVar::new(vars)
+            $crate::InputVar::new(vars)
         }
     };
 }
@@ -287,17 +287,17 @@ macro_rules! fz_output_var {
             let mut vars: Vec<fuzzy::mf::MfType> = Vec::new();
             $(
                 let value = match $x.0 {
-                    "triangle" => fuzzy::mf::Triangle::new($x.1, $x.2),
-                    "trapezoid" => fuzzy::mf::Trapezoid::new($x.1, $x.2),
-                    "up" => fuzzy::mf::Up::new($x.1, $x.2),
-                    "down" => fuzzy::mf::Down::new($x.1, $x.2),
+                    "triangle" => $crate::mf::Triangle::new($x.1, $x.2),
+                    "trapezoid" => $crate::mf::Trapezoid::new($x.1, $x.2),
+                    "up" => $crate::mf::Up::new($x.1, $x.2),
+                    "down" => $crate::mf::Down::new($x.1, $x.2),
                     _ => return Err(TXParserError::from_complex("No MF found for type", $x.0))
                     
                 };
                vars.push(value);
                 
             )*
-            fuzzy::OutputVar::new(vars)
+            $crate::OutputVar::new(vars)
         }
     };
 }
