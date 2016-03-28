@@ -7,7 +7,7 @@ This is an early version. Syntax may change at any time.
 extern crate rsfuzzy;
 use rsfuzzy;
 
-pub fn test() {
+pub fn main() {
     let mut f_engine = rsfuzzy::Engine::new();
 
     let i_var1 = fz_input_var![
@@ -17,7 +17,7 @@ pub fn test() {
         ("triangle", "high", vec![40.0, 60.0, 75.0]),
         ("up", "critical", vec![60.0, 100.0])
     ];
-    f_engine.add_input_var("var1", i_packets, 0, 100);
+    f_engine.add_input_var("var1", i_var1, 0, 100);
 
     let i_var2 = fz_input_var![
         ("down", "normal", vec![0.0, 30.0]),
@@ -36,7 +36,7 @@ pub fn test() {
         ("triangle", "high", vec![40.0, 60.0, 75.0]),
         ("up", "critical", vec![60.0, 100.0])
     ];
-    f_engine.add_output_var("output", o_intensity, 0, 100);
+    f_engine.add_output_var("output", o_var, 0, 100);
 
     let f_rules = vec![
         ("if var1 is normal and var2 is normal then output is normal"),
