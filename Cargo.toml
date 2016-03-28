@@ -1,6 +1,6 @@
 [package]
 name = "rsfuzzy"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Andrew Useckas <andrew@threatx.io>"]
 description = "Basic Rust fuzzy logic library"
 repository = "https://github.com/auseckas/rsfuzzy.git"
