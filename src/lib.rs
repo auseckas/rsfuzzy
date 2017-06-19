@@ -6,6 +6,9 @@
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 
+#[macro_use]
+extern crate log;
+
 use std::vec::Vec;
 use std::collections::HashMap;
 use std::fmt;
@@ -150,7 +153,7 @@ impl Engine {
             else {
                 panic!("Output field: '{}' not found", fields[idx]);
             }
-            println!("dst: {:?}", dst_field);
+            debug!("dst: {:?}", dst_field);
             idx += 1;
             if fields[idx] != "is" {
                 panic!("Invalid syntax. 'is' missing in '{}'", rule);

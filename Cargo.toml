@@ -6,3 +6,6 @@ description = "Basic Rust fuzzy logic library"
 repository = "https://github.com/auseckas/rsfuzzy.git"
 homepage = "https://github.com/auseckas/rsfuzzy.git"
 license = "Apache-2.0"
+
+[dependencies]
+log="^0.3"

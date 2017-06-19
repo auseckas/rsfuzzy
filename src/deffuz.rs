@@ -40,7 +40,7 @@ pub struct Centroid;
 
 impl Centroid {
     pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, inputs: HashMap<String, f32>) -> f32 {
-        println!("Start: {:?}, end: {:?}", start, end);
+        debug!("Start: {:?}, end: {:?}", start, end);
         let fdom: Vec<f32> = (start..end).map(|y| {
             let mut values: Vec<f32> = Vec::with_capacity(rules.len());
             for rule in rules {
@@ -54,7 +54,7 @@ impl Centroid {
                 for var in input_vars {
                     let input_name = &var.0;
                     let input_obj = &var.1;
-                    println!("Input: {:?}", input_name);
+                    debug!("Input: {:?}", input_name);
                     let input_hedge = &var.2;
                     let operator = &var.3;
                     let x = match inputs.get(input_name) {
@@ -83,7 +83,7 @@ impl Centroid {
             }
             values.iter().fold(0f32, |a, b| a + b)
         }).collect();
-        println!("Fdom: {:?}", fdom);
+        debug!("Fdom: {:?}", fdom);
         let z_pairs = (start..end).zip(fdom.iter());
         let map_first = z_pairs.map(|(a, b)| a as f32 * b);
         let first = map_first.fold(0f32, |a, b| a + b);
