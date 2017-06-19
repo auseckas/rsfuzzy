@@ -23,7 +23,7 @@ use std::f32;
 pub struct Engine {
     inputs: HashMap<String, InputVar>,
     output: HashMap<String, OutputVar>,
-    rules: Vec<(Vec<(mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>,
+    rules: Vec<(Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>,
     range: (usize, usize),
     defuzz: DefuzzType,
 }
@@ -45,7 +45,7 @@ impl Engine {
             defuzz: DefuzzType::Undefined,
         }
     }
-    
+
     pub fn add_input_var(&mut self, name: &str, input_var: InputVar, start: usize, end: usize) {
         let mut i_var = input_var;
         i_var.start(start);
@@ -59,7 +59,7 @@ impl Engine {
         o_var.end(end);
         self.output.insert(name.to_owned(), o_var);
     }
-    
+
     pub fn add_defuzz(&mut self, name: &str) {
         let defuzz = match name {
             "centroid" => DefuzzType::Centroid(Centroid),
@@ -71,7 +71,7 @@ impl Engine {
         }
         self.defuzz = defuzz;
     }
-    
+
     pub fn add_rules(&mut self, rules: Vec<&str>) {
         let hedges = hedges::types();
         let operators: Vec<&'static str> = OPERATOR.iter().map(|&x| x).collect();
@@ -84,15 +84,16 @@ impl Engine {
             idx = 0;
             input_hedge = None;
             output_hedge = None;
-            let mut input_vars: Vec<(mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)> = Vec::new();
+            let mut input_vars: Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)> = Vec::new();
             if fields[idx] != "if" {
                 panic!("Invalid syntax. 'if' missing in '{}'", rule);
             }
             idx += 1;
-            
+
             loop {
                 let src_field;
-                if let Some(value) = self.inputs.get(fields[idx]) {
+                let input_name = fields[idx];
+                if let Some(value) = self.inputs.get(input_name) {
                     src_field = value;
                 }
                 else {
@@ -103,10 +104,10 @@ impl Engine {
                     panic!("Invalid syntax. 'is' missing in '{}'", rule);
                 }
                 idx += 1;
-            
+
                 loop {
                     if hedges.contains(&fields[idx]) {
-                        input_hedge = Some(Box::new(Hedge::new(fields[idx], input_hedge))); 
+                        input_hedge = Some(Box::new(Hedge::new(fields[idx], input_hedge)));
                         idx += 1;
                     } else {
                         break;
@@ -127,21 +128,21 @@ impl Engine {
                         "not" => Some(DefuzzOp::Not),
                         _ => panic!("Operator '{}' not found!", fields[idx])
                     };
-                    input_vars.push((input_var.clone(), input_hedge.clone(), operator));
+                    input_vars.push((input_name.to_owned(), input_var.clone(), input_hedge.clone(), operator));
                     idx += 1;
                 }
                 else {
-                    input_vars.push((input_var.clone(), input_hedge.clone(), None));
+                    input_vars.push((input_name.to_owned(), input_var.clone(), input_hedge.clone(), None));
                     break;
                 }
-                
+
             }
 
             if fields[idx] != "then" {
                 panic!("Invalid syntax. 'then' missing in '{}'", rule);
             }
             idx += 1;
-            
+
             let dst_field;
             if let Some(value) = self.output.get(fields[idx]) {
                 dst_field = value;
@@ -149,6 +150,7 @@ impl Engine {
             else {
                 panic!("Output field: '{}' not found", fields[idx]);
             }
+            println!("dst: {:?}", dst_field);
             idx += 1;
             if fields[idx] != "is" {
                 panic!("Invalid syntax. 'is' missing in '{}'", rule);
@@ -156,7 +158,7 @@ impl Engine {
             idx += 1;
             loop {
                 if hedges.contains(&fields[idx]) {
-                    output_hedge = Some(Box::new(Hedge::new(fields[idx], output_hedge))); 
+                    output_hedge = Some(Box::new(Hedge::new(fields[idx], output_hedge)));
                     idx += 1;
                 } else {
                     break;
@@ -173,15 +175,15 @@ impl Engine {
             self.rules.push((input_vars.clone(), output_hedge.clone(), output_var.clone()));
         }
     }
-    
-    pub fn calculate(&self, x: f32) -> f32 {
+
+    pub fn calculate(&self, inputs: HashMap<String, f32>) -> f32 {
         let (start, end) = self.range;
-        if let DefuzzType::Undefined =  self.defuzz {
+        if let DefuzzType::Undefined = self.defuzz {
             return f32::NAN;
         }
-        self.defuzz.get(start, end, &self.rules, x)
+        self.defuzz.get(start, end, &self.rules, inputs)
     }
-    
+
 }
 
 #[derive(Debug, Clone)]
@@ -199,7 +201,7 @@ impl InputVar {
             end: 0
         }
     }
-    
+
     fn start(&mut self, start: usize) {
         self.start = start;
     }
@@ -207,7 +209,7 @@ impl InputVar {
     fn end(&mut self, end: usize) {
         self.end = end;
     }
-    
+
     fn get(&self, name: &str) -> Option<&mf::MfType>{
         for var in &self.vars {
             if var.name() == name {
@@ -234,7 +236,7 @@ impl OutputVar {
             end: 0
         }
     }
-    
+
     fn start(&mut self, start: usize) {
         self.start = start;
     }
@@ -270,10 +272,10 @@ macro_rules! fz_input_var {
                     "up" => $crate::mf::Up::new($x.1, $x.2),
                     "down" => $crate::mf::Down::new($x.1, $x.2),
                     _ => panic!("No MF found for type: {}", $x.0)
-                    
+
                 };
                vars.push(value);
-                
+
             )*
             $crate::InputVar::new(vars)
         }
@@ -294,9 +296,24 @@ macro_rules! fz_output_var {
                     _ => panic!("No MF found for type: {}", $x.0)
                 };
                vars.push(value);
-                
+
             )*
             $crate::OutputVar::new(vars)
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! fz_set_inputs {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut inputs: HashMap<String, f32> = HashMap::new();
+            $(
+                let name = $x.0;
+                let val = $x.1;
+                inputs.insert(name.to_owned(), val);
+            )*
+            inputs
         }
     };
 }

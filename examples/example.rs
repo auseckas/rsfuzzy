@@ -1,8 +1,3 @@
-# Basic usage
-
-This is an early version. Syntax may change at any time.
-
-```
 #[macro_use]
 extern crate rsfuzzy;
 use std::collections::HashMap;
@@ -57,6 +52,5 @@ pub fn main() {
     ];
 
     let result = f_engine.calculate(inputs);
+    println!("Result: {:?}", result);
 }
-
-```

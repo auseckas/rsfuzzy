@@ -6,6 +6,7 @@
 //
 // http://www.apache.org/licenses/LICENSE-2.0
 
+use std::collections::HashMap;
 use hedges::Hedge;
 use mf;
 
@@ -25,10 +26,10 @@ pub enum DefuzzOp {
 
 
 impl DefuzzType {
-    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, x: f32) -> f32 {
+    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, inputs: HashMap<String, f32>) -> f32 {
         match *self {
-            DefuzzType::Centroid(ref value) => value.get(start, end, rules, x),
-            DefuzzType::Mom(ref value) => value.get(start, end, rules, x),
+            DefuzzType::Centroid(ref value) => value.get(start, end, rules, inputs),
+            DefuzzType::Mom(ref value) => value.get(start, end, rules, inputs),
             DefuzzType::Undefined => panic!("Cannot use 'Undefined' to defuzzify!")
         }
     }
@@ -38,7 +39,8 @@ impl DefuzzType {
 pub struct Centroid;
 
 impl Centroid {
-    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, x: f32) -> f32 {
+    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, inputs: HashMap<String, f32>) -> f32 {
+        println!("Start: {:?}, end: {:?}", start, end);
         let fdom: Vec<f32> = (start..end).map(|y| {
             let mut values: Vec<f32> = Vec::with_capacity(rules.len());
             for rule in rules {
@@ -50,10 +52,16 @@ impl Centroid {
                 let mut oper = &None;
                 let mut output = 0f32;
                 for var in input_vars {
-                    let input_obj = &var.0;
-                    let input_hedge = &var.1;
-                    let operator = &var.2;
-                    val = input_obj.compute(x);
+                    let input_name = &var.0;
+                    let input_obj = &var.1;
+                    println!("Input: {:?}", input_name);
+                    let input_hedge = &var.2;
+                    let operator = &var.3;
+                    let x = match inputs.get(input_name) {
+                        Some(val) => val,
+                        None => panic!("Variable {} not defined.", input_name)
+                    };
+                    val = input_obj.compute(*x);
                     if let Some(ref hedge) = *input_hedge {
                         val = hedge.compute(val);
                     }
@@ -75,6 +83,7 @@ impl Centroid {
             }
             values.iter().fold(0f32, |a, b| a + b)
         }).collect();
+        println!("Fdom: {:?}", fdom);
         let z_pairs = (start..end).zip(fdom.iter());
         let map_first = z_pairs.map(|(a, b)| a as f32 * b);
         let first = map_first.fold(0f32, |a, b| a + b);
@@ -87,7 +96,7 @@ impl Centroid {
 pub struct Mom;
 
 impl Mom {
-    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, i_crisp: f32) -> f32 {
+    pub fn get(&self, start: usize, end: usize, rules: &Vec<(Vec<(String, mf::MfType, Option<Box<Hedge>>, Option<DefuzzOp>)>, Option<Box<Hedge>>, mf::MfType)>, inputs: HashMap<String, f32>) -> f32 {
         let mut result: Vec<f32> = Vec::with_capacity(rules.len() + 5);
         let range: Vec<f32> = (start..end).map(|x| x as f32).collect();
         let mut values: Vec<(f32, f32)> = Vec::with_capacity(end as usize + 1);
@@ -96,6 +105,7 @@ impl Mom {
         let mut prev_val;
         let mut x;
         let mut input_obj;
+        let mut input_name;
         let mut input_hedge;
         let mut operator;
 
@@ -105,17 +115,23 @@ impl Mom {
             let input_vars = &rule.0;
             let output_hedge = &rule.1;
             let output_obj = &rule.2;
-        
+
             for &i in range.iter() {
                 val = 0f32;
                 prev_val = 0f32;
                 let mut oper = &None;
                 for var in input_vars {
-                    input_obj = &var.0;
-                    input_hedge = &var.1;
-                    operator = &var.2;
+                    input_name = &var.0;
+                    input_obj = &var.1;
+                    input_hedge = &var.2;
+                    operator = &var.3;
 
-                    val = input_obj.compute(i_crisp);
+                    let i_crisp = match inputs.get(input_name) {
+                        Some(val) => val,
+                        None => panic!("Variable {} not defined.", input_name)
+                    };
+
+                    val = input_obj.compute(*i_crisp);
                     if let Some(ref hedge) = *input_hedge {
                         val = hedge.compute(val);
                     }
@@ -138,7 +154,7 @@ impl Mom {
                 }
                 values.push((i, x));
             };
-            
+
             let fdom: Vec<f32> = values.iter().filter_map(|&var| {
                 let (i, x) = var;
                 if x > 0.0 && x == xmax {
@@ -150,7 +166,7 @@ impl Mom {
             }).collect();
             result.extend(fdom)
         }
-        
+
         let sum_result = result.iter().fold(0f32, |a, &b| a + b);
         sum_result / result.len() as f32
     }
