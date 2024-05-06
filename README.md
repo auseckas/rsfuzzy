@@ -1,7 +1,5 @@
 # Basic usage
 
-This is an early version. Syntax may change at any time.
-
 ```
 #[macro_use]
 extern crate rsfuzzy;
